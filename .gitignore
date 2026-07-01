@@ -1,0 +1,8 @@
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+.vercel
+*.log
+# local transcript samples with real meeting data
+transcripts/
