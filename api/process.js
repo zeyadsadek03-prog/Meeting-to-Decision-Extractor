@@ -9,6 +9,15 @@ function hashWebhook(url) {
   }
 }
 
+function hashTranscript(text) {
+  try {
+    const crypto = require('crypto');
+    return crypto.createHash('sha256').update(text).digest('hex').slice(0, 16);
+  } catch {
+    return 'unknown';
+  }
+}
+
 async function trackEvent(webhookHash, event, data = {}) {
   try {
     const today = new Date().toISOString().slice(0, 10);
@@ -92,6 +101,15 @@ export default async function handler(req, res) {
     }
 
     const webhookHash = hashWebhook(webhookUrl);
+    const transcriptHash = hashTranscript(transcript);
+    const dedupKey = `posted:${webhookHash}:${transcriptHash}`;
+
+    // Idempotency check: skip if already posted within 10 minutes
+    const alreadyPosted = await kv.get(dedupKey);
+    if (alreadyPosted) {
+      return res.status(200).json({ formatted: '—', note: 'Already posted to Slack recently. Skipping duplicate.' });
+    }
+
     const normalized = normalizeTranscript(transcript);
     await trackEvent(webhookHash, 'attempt');
 
@@ -120,9 +138,9 @@ ${normalized.slice(0, 6000)}`;
 
     let parsed = await extractJson(prompt);
 
-    // Retry once if JSON schema looks invalid
+    // Retry once with stricter reminder
     if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.decisions)) {
-      parsed = await extractJson(prompt + '\n\nReturn JSON only. Ensure keys: decisions, actions, deadlines, notes.');
+      parsed = await extractJson(prompt + '\n\nReturn ONLY valid JSON. No markdown fences. No text before/after JSON. Ensure keys: decisions, actions, deadlines, notes.');
     }
 
     const decisions = (parsed.decisions || []).map(d => `• ${d.text}${d.owner ? ` (owner: ${d.owner})` : ''}`).join('\n');
@@ -153,6 +171,9 @@ ${notes}`.trim();
     });
 
     await trackEvent(webhookHash, 'success');
+
+    // Mark as posted for 10 minutes to prevent duplicates
+    await kv.set(dedupKey, '1', { ex: 600 });
 
     return res.status(200).json({ formatted, parsed });
   } catch (err) {
