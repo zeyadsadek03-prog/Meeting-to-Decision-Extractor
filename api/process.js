@@ -1,24 +1,106 @@
-import normalize from '../lib/normalize.js';
+function normalizeTranscript(text) {
+  let s = text.replace(/\r\n/g, '\n');
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+  // VTT timestamp blocks like 00:00:01.234 --> 00:00:04.567
+  s = s.replace(/^\d{2}:\d{2}:\d{2}\.\d{3}\s+-->\s+\d{2}:\d{2}:\d{2}\.\d{3}\s*$/gm, '');
 
-  const rawTranscript = req.body?.transcript || '';
-  if (!rawTranscript.trim()) {
-    return res.status(400).json({ error: 'Empty transcript' });
+  // WEBVTT header line
+  s = s.replace(/^WEBVTT.*$/gm, '');
+
+  // Speaker labels like "Zeyad:" or "Zeyad >"
+  s = s.replace(/^([A-Za-z][A-Za-z0-9_\s]+?)[\s:>]+/gm, '$1: ');
+
+  // Blank-line collapses
+  s = s.replace(/\n{3,}/g, '\n\n');
+
+  return s.trim();
+}
+
+async function extractJson(prompt) {
+  const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: 'You only output JSON. No explanations.' },
+        { role: 'user', content: prompt }
+      ]
+    })
+  });
+
+  if (!groqRes.ok) {
+    const t = await groqRes.text();
+    throw new Error('Groq failed: ' + t.slice(0, 300));
   }
 
-  // normalized text
-  const normalized = normalize(rawTranscript);
+  const groqData = await groqRes.json();
+  const content = groqData.choices?.[0]?.message?.content || '{}';
+  try {
+    return JSON.parse(content);
+  } catch {
+    return { raw: content };
+  }
+}
 
-  // MVP placeholder: return structured mock until Groq integration is added
-  const result = {
-    decisions: ['MVP extraction stub — pending Groq integration'],
-    actionItems: [{ owner: 'Zeyad', task: 'Add Groq extraction + Slack post', deadline: 'Day 2' }],
-    deadlines: [],
-    raw: normalized
-  };
+export default async function handler(req, res) {
+  try {
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-  res.setHeader('Cache-Control', 'no-store');
-  return res.status(200).json(result);
+    const { transcript } = req.body || {};
+
+    if (!transcript || typeof transcript !== 'string') {
+      return res.status(400).json({ error: 'Missing transcript' });
+    }
+
+    const normalized = normalizeTranscript(transcript);
+
+    const prompt = `You are a meeting assistant. Extract ONLY decisions, action items, owners, and deadlines.
+Return STRICT JSON:
+{
+  "decisions": [{"text": "...", "owner": "optional"}],
+  "actions": [{"task": "...", "owner": "...", "deadline": "optional"}],
+  "deadlines": ["..."],
+  "notes": "optional short summary"
+}
+
+Few-shot example input:
+"Zeyad: We're moving the launch to June 15. Ali will update the landing page. Sara: I'm OOO next Monday but will review the QA sheet by EOD tomorrow."
+
+Expected output:
+{
+  "decisions": [{"text": "Move launch to June 15", "owner": "Team"}],
+  "actions": [{"task": "Update landing page", "owner": "Ali"}, {"task": "Review QA sheet", "owner": "Sara", "deadline": "EOD tomorrow"}],
+  "deadlines": ["EOD tomorrow", "June 15"],
+  "notes": "Sara unavailable next Monday"
+}
+
+Transcript:
+${normalized.slice(0, 6000)}`;
+
+    let parsed = await extractJson(prompt);
+
+    // Retry once with stricter reminder
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.decisions)) {
+      parsed = await extractJson(prompt + '\n\nReturn ONLY valid JSON. No markdown fences. No text before/after JSON. Ensure keys: decisions, actions, deadlines, notes.');
+    }
+
+    const decisions = (parsed.decisions || []).map(d => `• ${d.text}${d.owner ? ` (owner: ${d.owner})` : ''}`).join('\n');
+    const actions = (parsed.actions || []).map(a => `• ${a.task} — owner: ${a.owner || 'unassigned'}${a.deadline ? ` — due: ${a.deadline}` : ''}`).join('\n');
+    const deadlines = (parsed.deadlines || []).length ? parsed.deadlines.join('\n') : '—';
+    const notes = parsed.notes ? `Notes: ${parsed.notes}` : '';
+
+    const formatted = `*Decisions*\n${decisions || '—'}\n\n*Actions*\n${actions || '—'}\n\n*Deadlines*\n${deadlines}\n\n${notes}`.trim();
+
+    return res.status(200).json({ formatted, parsed });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 }
