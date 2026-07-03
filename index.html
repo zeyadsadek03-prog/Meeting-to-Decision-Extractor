@@ -223,7 +223,7 @@
 
     loginBtn.addEventListener('click', () => {
       const email = String(loginEmail.value || '').trim();
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (!email || !/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email)) {
         loginEmail.classList.add('border-red-500');
         return;
       }
