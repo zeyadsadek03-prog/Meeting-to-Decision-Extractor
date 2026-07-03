@@ -165,8 +165,18 @@
     const logoutBtn = document.getElementById('logoutBtn');
     const logoutMainBtn = document.getElementById('logoutMainBtn');
     const root = document.documentElement;
+    const setupError = document.getElementById('setupError');
 
     let currentUser = getCurrentUser();
+
+    function safeRoute() {
+      try {
+        route();
+      } catch {
+        currentUser = '';
+        showView('login');
+      }
+    }
 
     function showView(name) {
       Object.values(views).forEach(el => el.classList.add('hidden'));
@@ -336,9 +346,9 @@
       }
     }
 
-    window.addEventListener('hashchange', route);
-    route();
-  });
+    window.addEventListener('hashchange', safeRoute);
+    safeRoute();
+  })();
 
     // ----- Utils -----
     function escapeHtml(str) {
