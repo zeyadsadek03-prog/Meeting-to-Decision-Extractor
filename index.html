@@ -28,30 +28,89 @@
 </head>
 <body class="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex items-start justify-center px-4 py-10 transition-colors duration-300">
 
-  <main class="w-full max-w-2xl space-y-6">
+  <!-- LOGIN VIEW -->
+  <section id="view-login" class="hidden w-full max-w-md space-y-6">
+    <div class="space-y-2">
+      <h1 class="text-2xl font-bold tracking-tight">Welcome</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Enter any email to continue. No password, no signup.</p>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 space-y-4">
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Your email</label>
+        <input id="loginEmail" type="email" placeholder="you@example.com"
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
+      </div>
+      <button id="loginBtn" class="w-full rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 active:scale-[.98] transition disabled:opacity-50">
+        Continue
+      </button>
+      <p class="text-xs text-slate-500 dark:text-slate-500">Your data stays in this browser only.</p>
+    </div>
+  </section>
+
+  <!-- SETUP VIEW -->
+  <section id="view-setup" class="hidden w-full max-w-2xl space-y-6">
+    <div class="flex items-center justify-between">
+      <div class="space-y-1">
+        <h1 class="text-2xl font-bold tracking-tight">Setup</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Add at least one Slack incoming webhook URL.</p>
+      </div>
+      <button id="logoutBtn" class="text-xs text-slate-500 dark:text-slate-400 hover:text-red-500 transition">Logout</button>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 space-y-4">
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Slack incoming webhook URL</label>
+        <input id="webhookInput" type="url" placeholder="https://hooks.slack.com/services/..."
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
+        <p class="text-xs text-slate-500 dark:text-slate-500">One URL = one Slack channel. Add more later from the main page.</p>
+      </div>
+      <button id="addWebhookBtn" class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+        Add channel
+      </button>
+
+      <div id="webhookList" class="space-y-2"></div>
+
+      <div class="flex items-center justify-between pt-2">
+        <p id="setupError" class="text-xs text-red-500 hidden"></p>
+        <button id="continueBtn" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 active:scale-[.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Continue to Extractor
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN VIEW -->
+  <section id="view-main" class="hidden w-full max-w-2xl space-y-6">
     <header class="space-y-2">
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Meeting-to-Decision Extractor</h1>
-        <button id="themeToggle" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-          <span id="themeIcon" class="text-base leading-none">🌙</span>
-          <span id="themeLabel">Dark</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <button id="themeToggle" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+            <span id="themeIcon" class="text-base leading-none">🌙</span>
+            <span id="themeLabel">Dark</span>
+          </button>
+          <button id="manageWebhooksBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+            Channels
+          </button>
+          <button id="logoutMainBtn" class="text-xs text-slate-500 dark:text-slate-400 hover:text-red-500 transition">Logout</button>
+        </div>
       </div>
       <p class="text-sm text-slate-500 dark:text-slate-400">Paste a transcript. Get clean decisions, owners, and deadlines.</p>
     </header>
 
     <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 space-y-4 transition-colors duration-300">
       <div class="space-y-1">
-        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Meeting transcript</label>
-        <textarea id="transcript" rows="8" placeholder="Paste your transcript or meeting notes here..."
-          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors no-scrollbar"></textarea>
+        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Slack channel</label>
+        <select id="webhookSelect"
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+        </select>
       </div>
 
       <div class="space-y-1">
-        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Slack incoming webhook URL</label>
-        <input id="webhook" type="url" placeholder="https://hooks.slack.com/services/..."
-          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
-        <p class="text-xs text-slate-500 dark:text-slate-500">One URL = one fixed Slack channel. Change it anytime.</p>
+        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Meeting transcript</label>
+        <textarea id="transcript" rows="8" placeholder="Paste your transcript or meeting notes here..."
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors no-scrollbar"></textarea>
       </div>
 
       <div class="flex items-center justify-between">
@@ -75,22 +134,46 @@
     <footer class="text-xs text-slate-400 dark:text-slate-600">
       Built for vibe coding. MIT licensed.
     </footer>
-  </main>
+  </section>
 
-  <script>
-    const transcriptEl = document.getElementById('transcript');
-    const webhookEl = document.getElementById('webhook');
+  <script type="module">
+    import { getCurrentUser, setCurrentUser, clearCurrentUser, getUser, saveUser } from '/lib/storage.js';
+
+    const views = {
+      login: document.getElementById('view-login'),
+      setup: document.getElementById('view-setup'),
+      main: document.getElementById('view-main')
+    };
+
+    const loginEmail = document.getElementById('loginEmail');
+    const loginBtn = document.getElementById('loginBtn');
+    const webhookInput = document.getElementById('webhookInput');
+    const addWebhookBtn = document.getElementById('addWebhookBtn');
+    const webhookList = document.getElementById('webhookList');
+    const continueBtn = document.getElementById('continueBtn');
+    const setupError = document.getElementById('setupError');
+    const webhookSelect = document.getElementById('webhookSelect');
     const submitBtn = document.getElementById('submit');
     const resultEl = document.getElementById('result');
     const outputEl = document.getElementById('output');
     const statusEl = document.getElementById('status');
-
-    // ---- Theme ----
+    const transcriptEl = document.getElementById('transcript');
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = document.getElementById('themeIcon');
     const themeLabel = document.getElementById('themeLabel');
+    const manageWebhooksBtn = document.getElementById('manageWebhooksBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutMainBtn = document.getElementById('logoutMainBtn');
     const root = document.documentElement;
 
+    let currentUser = getCurrentUser();
+
+    function showView(name) {
+      Object.values(views).forEach(el => el.classList.add('hidden'));
+      views[name].classList.remove('hidden');
+    }
+
+    // ----- Theme -----
     function applyTheme(dark) {
       if (dark) {
         root.classList.add('dark');
@@ -103,10 +186,9 @@
       }
     }
 
-    const saved = localStorage.getItem('theme');
+    const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initialDark = saved ? saved === 'dark' : prefersDark;
-    applyTheme(initialDark);
+    applyTheme(savedTheme ? savedTheme === 'dark' : prefersDark);
 
     themeToggle.addEventListener('click', () => {
       const isDark = root.classList.contains('dark');
@@ -114,12 +196,104 @@
       localStorage.setItem('theme', !isDark ? 'dark' : 'light');
     });
 
-    // ---- Submit ----
+    // ----- Auth -----
+    function logout() {
+      clearCurrentUser();
+      currentUser = '';
+      showView('login');
+    }
+
+    logoutBtn.addEventListener('click', logout);
+    logoutMainBtn.addEventListener('click', logout);
+
+    loginBtn.addEventListener('click', () => {
+      const email = String(loginEmail.value || '').trim();
+      if (!email || !email.includes('@')) {
+        loginEmail.classList.add('border-red-500');
+        return;
+      }
+      setCurrentUser(email);
+      currentUser = email;
+      setupError.classList.add('hidden');
+      renderSetup();
+      showView('setup');
+    });
+
+    // ----- Setup -----
+    function renderSetup() {
+      const user = getUser(currentUser);
+      const webhooks = user?.webhooks || [];
+
+      webhookList.innerHTML = webhooks.map((url, i) => `
+        <div class="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 p-2.5">
+          <div class="min-w-0 flex-1 mr-2">
+            <p class="text-xs text-slate-700 dark:text-slate-300 truncate">${escapeHtml(url)}</p>
+          </div>
+          <button data-idx="${i}" class="delete-webhook shrink-0 rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition">Delete</button>
+        </div>
+      `).join('') || '<p class="text-xs text-slate-500 dark:text-slate-500 italic">No channels added yet.</p>';
+
+      document.querySelectorAll('.delete-webhook').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.idx);
+          const u = getUser(currentUser);
+          if (u?.webhooks) {
+            u.webhooks.splice(idx, 1);
+            saveUser(currentUser, u.webhooks);
+            renderSetup();
+          }
+        });
+      });
+
+      continueBtn.disabled = webhooks.length === 0;
+    }
+
+    addWebhookBtn.addEventListener('click', () => {
+      const url = String(webhookInput.value || '').trim();
+      if (!url) {
+        webhookInput.classList.add('border-red-500');
+        return;
+      }
+      const u = getUser(currentUser);
+      const webhooks = u?.webhooks || [];
+      if (webhooks.includes(url)) {
+        setupError.textContent = 'Already added.';
+        setupError.classList.remove('hidden');
+        return;
+      }
+      saveUser(currentUser, [...webhooks, url]);
+      webhookInput.value = '';
+      setupError.classList.add('hidden');
+      renderSetup();
+    });
+
+    continueBtn.addEventListener('click', () => {
+      renderMain();
+      showView('main');
+    });
+
+    manageWebhooksBtn.addEventListener('click', () => {
+      renderSetup();
+      showView('setup');
+    });
+
+    // ----- Main -----
+    function renderMain() {
+      const u = getUser(currentUser);
+      const webhooks = u?.webhooks || [];
+      webhookSelect.innerHTML = webhooks.map((url, i) =>
+        `<option value="${escapeHtml(url)}">${escapeHtml(url)}</option>`
+      ).join('');
+      webhookSelect.disabled = webhooks.length === 0;
+      resultEl.classList.add('hidden');
+      transcriptEl.value = '';
+    }
+
     submitBtn.addEventListener('click', async () => {
       const text = transcriptEl.value.trim();
-      const webhook = webhookEl.value.trim();
+      const webhook = webhookSelect.value;
       if (!text) return alert('Paste a transcript first.');
-      if (!webhook) return alert('Paste a Slack webhook URL.');
+      if (!webhook) return alert('No webhook selected.');
 
       statusEl.textContent = 'Working...';
       resultEl.classList.remove('hidden');
@@ -132,10 +306,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ transcript: text, webhookUrl: webhook })
         });
-
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
-
         outputEl.textContent = data.formatted || JSON.stringify(data, null, 2);
         statusEl.textContent = 'Posted to Slack ✓';
       } catch (err) {
@@ -145,6 +317,37 @@
         submitBtn.disabled = false;
       }
     });
+
+    // ----- Router -----
+    function route() {
+      currentUser = getCurrentUser();
+      if (!currentUser) {
+        showView('login');
+      } else {
+        const u = getUser(currentUser);
+        if (u?.webhooks?.length) {
+          renderMain();
+          showView('main');
+        } else {
+          setupError.classList.add('hidden');
+          renderSetup();
+          showView('setup');
+        }
+      }
+    }
+
+    window.addEventListener('hashchange', route);
+    route();
+  });
+
+    // ----- Utils -----
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
   </script>
 </body>
 </html>
