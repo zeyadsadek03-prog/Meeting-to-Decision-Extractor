@@ -62,25 +62,24 @@ export default async function handler(req, res) {
 
     const normalized = normalizeTranscript(transcript);
 
-    const prompt = `You are a meeting assistant. Extract ONLY decisions, action items, owners, and deadlines.
-Return STRICT JSON:
+    const prompt = `Extract meeting outcomes from this transcript.
+Focus on: decisions, action items, owners, deadlines.
+If a category is empty, return an empty array.
+
+Return ONLY JSON, no markdown fences or extra text:
 {
   "decisions": [{"text": "...", "owner": "optional"}],
   "actions": [{"task": "...", "owner": "...", "deadline": "optional"}],
   "deadlines": ["..."],
-  "notes": "optional short summary"
+  "notes": "optional brief summary"
 }
 
-Few-shot example input:
-"Zeyad: We're moving the launch to June 15. Ali will update the landing page. Sara: I'm OOO next Monday but will review the QA sheet by EOD tomorrow."
+Examples:
+Input: "Ali will send the report by Friday. We agreed to launch on June 20."
+Output: {"decisions":[{"text":"Launch on June 20"}],"actions":[{"task":"Send report","owner":"Ali","deadline":"Friday"}],"deadlines":["Friday","June 20"],"notes":""}
 
-Expected output:
-{
-  "decisions": [{"text": "Move launch to June 15", "owner": "Team"}],
-  "actions": [{"task": "Update landing page", "owner": "Ali"}, {"task": "Review QA sheet", "owner": "Sara", "deadline": "EOD tomorrow"}],
-  "deadlines": ["EOD tomorrow", "June 15"],
-  "notes": "Sara unavailable next Monday"
-}
+Input: "Let's table this until next week."
+Output: {"decisions":[{"text":"Table topic until next week"}],"actions":[],"deadlines":["next week"],"notes":""}
 
 Transcript:
 ${normalized.slice(0, 6000)}`;
@@ -88,12 +87,17 @@ ${normalized.slice(0, 6000)}`;
     let parsed = await extractJson(prompt);
 
     // Retry once with stricter reminder
-    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.decisions)) {
-      parsed = await extractJson(prompt + '\n\nReturn ONLY valid JSON. No markdown fences. No text before/after JSON. Ensure keys: decisions, actions, deadlines, notes.');
+    if (!parsed || typeof parsed !== 'object' || !('decisions' in parsed) || !('actions' in parsed)) {
+      parsed = await extractJson('From the transcript, extract ONLY decisions, action items, owners, and deadlines as JSON. Keys required: decisions, actions, deadlines, notes. No markdown, no explanations, no keys beyond these.');
+    }
+
+    // Normalize shape: if model returned notes-only, structure still needs arrays
+    if (typeof parsed !== 'object' || parsed === null) {
+      parsed = { decisions: [], actions: [], deadlines: [], notes: '' };
     }
 
     const decisions = (parsed.decisions || []).map(d => `• ${d.text}${d.owner ? ` (owner: ${d.owner})` : ''}`).join('\n');
-    const actions = (parsed.actions || []).map(a => `• ${a.task} — owner: ${a.owner || 'unassigned'}${a.deadline ? ` — due: ${a.deadline}` : ''}`).join('\n');
+    const actions = (parsed.actions || []).map(a => `• ${a.task || a.action || ''} — owner: ${a.owner || 'unassigned'}${a.deadline ? ` — due: ${a.deadline}` : ''}`).join('\n');
     const deadlines = (parsed.deadlines || []).length ? parsed.deadlines.join('\n') : '—';
     const notes = parsed.notes ? `Notes: ${parsed.notes}` : '';
 
