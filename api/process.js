@@ -1,18 +1,16 @@
+import { kv } from '@vercel/kv';
+import crypto from 'crypto';
+
+function opaqueId() {
+  return crypto.randomBytes(10).toString('hex');
+}
+
 function normalizeTranscript(text) {
   let s = text.replace(/\r\n/g, '\n');
-
-  // VTT timestamp blocks like 00:00:01.234 --> 00:00:04.567
   s = s.replace(/^\d{2}:\d{2}:\d{2}\.\d{3}\s+-->\s+\d{2}:\d{2}:\d{2}\.\d{3}\s*$/gm, '');
-
-  // WEBVTT header line
   s = s.replace(/^WEBVTT.*$/gm, '');
-
-  // Speaker labels like "Zeyad:" or "Zeyad >"
   s = s.replace(/^([A-Za-z][A-Za-z0-9_\s]+?)[\s:>]+/gm, '$1: ');
-
-  // Blank-line collapses
   s = s.replace(/\n{3,}/g, '\n\n');
-
   return s.trim();
 }
 
@@ -54,10 +52,13 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { transcript } = req.body || {};
+    const { transcript, webhookUrl } = req.body || {};
 
     if (!transcript || typeof transcript !== 'string') {
       return res.status(400).json({ error: 'Missing transcript' });
+    }
+    if (!webhookUrl || typeof webhookUrl !== 'string') {
+      return res.status(400).json({ error: 'Missing Slack webhook URL' });
     }
 
     const normalized = normalizeTranscript(transcript);
@@ -86,12 +87,10 @@ ${normalized.slice(0, 6000)}`;
 
     let parsed = await extractJson(prompt);
 
-    // Retry once with stricter reminder
     if (!parsed || typeof parsed !== 'object' || !('decisions' in parsed) || !('actions' in parsed)) {
       parsed = await extractJson('From the transcript, extract ONLY decisions, action items, owners, and deadlines as JSON. Keys required: decisions, actions, deadlines, notes. No markdown, no explanations, no keys beyond these.');
     }
 
-    // Normalize shape: if model returned notes-only, structure still needs arrays
     if (typeof parsed !== 'object' || parsed === null) {
       parsed = { decisions: [], actions: [], deadlines: [], notes: '' };
     }
@@ -103,7 +102,25 @@ ${normalized.slice(0, 6000)}`;
 
     const formatted = `*Decisions*\n${decisions || '—'}\n\n*Actions*\n${actions || '—'}\n\n*Deadlines*\n${deadlines}\n\n${notes}`.trim();
 
-    return res.status(200).json({ formatted, parsed });
+    const id = opaqueId();
+    await kv.set(`webhook:${id}`, webhookUrl);
+    await kv.expire(`webhook:${id}`, 60 * 60 * 24 * 30);
+
+    const returnLink = `https://meeting-to-decision-extractor.vercel.app?w=${id}`;
+
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: 'Meeting summary',
+        blocks: [
+          { type: 'section', text: { type: 'mrkdwn', text: '*Meeting summary*\n\n' + formatted } },
+          { type: 'context', elements: [{ type: 'mrkdwn', text: `Next meeting: paste transcript here → ${returnLink}` }] }
+        ]
+      })
+    });
+
+    return res.status(200).json({ formatted, returnLink });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

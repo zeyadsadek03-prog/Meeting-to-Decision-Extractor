@@ -24,10 +24,17 @@
           class="w-full rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"></textarea>
       </div>
 
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-300">Slack incoming webhook URL</label>
+        <input id="webhook" type="url" placeholder="https://hooks.slack.com/services/..."
+          class="w-full rounded-lg border border-slate-800 bg-slate-950/60 p-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+        <p class="text-xs text-slate-500">One URL = one fixed Slack channel. Change it anytime.</p>
+      </div>
+
       <div class="flex items-center justify-between">
         <p class="text-xs text-slate-500">No account needed. We never store your transcript.</p>
         <button id="submit" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold hover:bg-indigo-400 active:scale-[.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
-          Extract
+          Extract &amp; Post to Slack
         </button>
       </div>
     </section>
@@ -39,6 +46,7 @@
           <span id="status" class="text-xs text-slate-500"></span>
         </div>
         <div id="output" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"></div>
+        <div id="returnHook" class="hidden text-xs text-slate-400"></div>
       </div>
     </section>
 
@@ -49,32 +57,41 @@
 
   <script>
     const transcriptEl = document.getElementById('transcript');
+    const webhookEl = document.getElementById('webhook');
     const submitBtn = document.getElementById('submit');
     const resultEl = document.getElementById('result');
     const outputEl = document.getElementById('output');
+    const returnHookEl = document.getElementById('returnHook');
     const statusEl = document.getElementById('status');
 
     submitBtn.addEventListener('click', async () => {
       const text = transcriptEl.value.trim();
+      const webhook = webhookEl.value.trim();
       if (!text) return alert('Paste a transcript first.');
+      if (!webhook) return alert('Paste a Slack webhook URL.');
 
       statusEl.textContent = 'Working...';
       resultEl.classList.remove('hidden');
       outputEl.textContent = '';
+      returnHookEl.classList.add('hidden');
       submitBtn.disabled = true;
 
       try {
         const res = await fetch('/api/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript: text })
+          body: JSON.stringify({ transcript: text, webhookUrl: webhook })
         });
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
 
         outputEl.textContent = data.formatted || JSON.stringify(data, null, 2);
-        statusEl.textContent = 'Extracted ✓';
+        statusEl.textContent = 'Posted to Slack ✓';
+        if (data.returnLink) {
+          returnHookEl.textContent = 'Return hook: ' + data.returnLink;
+          returnHookEl.classList.remove('hidden');
+        }
       } catch (err) {
         statusEl.textContent = 'Error: ' + err.message;
         outputEl.textContent = err.message;
