@@ -63,7 +63,12 @@
         <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Slack incoming webhook URL</label>
         <input id="webhookInput" type="url" placeholder="https://hooks.slack.com/services/..."
           class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
-        <p class="text-xs text-slate-500 dark:text-slate-500">One URL = one Slack channel. Add more later from the main page.</p>
+        <div class="space-y-1">
+          <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Channel name</label>
+          <input id="webhookNameInput" type="text" placeholder="e.g. Engineering, General, Client X"
+            class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
+          <p class="text-xs text-slate-500 dark:text-slate-500">Pick a name — this is what you’ll see in the dropdown.</p>
+        </div>
       </div>
       <button id="addWebhookBtn" class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
         Add channel
@@ -101,7 +106,7 @@
 
     <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 space-y-4 transition-colors duration-300">
       <div class="space-y-1">
-        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Slack channel</label>
+        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Channel</label>
         <select id="webhookSelect"
           class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
         </select>
@@ -148,6 +153,7 @@
     const loginEmail = document.getElementById('loginEmail');
     const loginBtn = document.getElementById('loginBtn');
     const webhookInput = document.getElementById('webhookInput');
+    const webhookNameInput = document.getElementById('webhookNameInput');
     const addWebhookBtn = document.getElementById('addWebhookBtn');
     const webhookList = document.getElementById('webhookList');
     const continueBtn = document.getElementById('continueBtn');
@@ -217,7 +223,7 @@
 
     loginBtn.addEventListener('click', () => {
       const email = String(loginEmail.value || '').trim();
-      if (!email || !email.includes('@')) {
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         loginEmail.classList.add('border-red-500');
         return;
       }
@@ -233,10 +239,11 @@
       const user = getUser(currentUser);
       const webhooks = user?.webhooks || [];
 
-      webhookList.innerHTML = webhooks.map((url, i) => `
+      webhookList.innerHTML = webhooks.map((item, i) => `
         <div class="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 p-2.5">
           <div class="min-w-0 flex-1 mr-2">
-            <p class="text-xs text-slate-700 dark:text-slate-300 truncate">${escapeHtml(url)}</p>
+            <p class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(item.name || 'Untitled')}</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-500 truncate">${escapeHtml(item.url)}</p>
           </div>
           <button data-idx="${i}" class="delete-webhook shrink-0 rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition">Delete</button>
         </div>
@@ -259,19 +266,25 @@
 
     addWebhookBtn.addEventListener('click', () => {
       const url = String(webhookInput.value || '').trim();
+      const name = String(webhookNameInput.value || '').trim();
       if (!url) {
         webhookInput.classList.add('border-red-500');
         return;
       }
+      if (!name) {
+        webhookNameInput.classList.add('border-red-500');
+        return;
+      }
       const u = getUser(currentUser);
       const webhooks = u?.webhooks || [];
-      if (webhooks.includes(url)) {
-        setupError.textContent = 'Already added.';
+      if (webhooks.some(w => w.url === url)) {
+        setupError.textContent = 'This webhook URL is already added.';
         setupError.classList.remove('hidden');
         return;
       }
-      saveUser(currentUser, [...webhooks, url]);
+      saveUser(currentUser, [...webhooks, { name, url }]);
       webhookInput.value = '';
+      webhookNameInput.value = '';
       setupError.classList.add('hidden');
       renderSetup();
     });
@@ -290,8 +303,8 @@
     function renderMain() {
       const u = getUser(currentUser);
       const webhooks = u?.webhooks || [];
-      webhookSelect.innerHTML = webhooks.map((url, i) =>
-        `<option value="${escapeHtml(url)}">${escapeHtml(url)}</option>`
+      webhookSelect.innerHTML = webhooks.map((item) =>
+        `<option value="${escapeHtml(item.url)}">${escapeHtml(item.name || 'Untitled')}</option>`
       ).join('');
       webhookSelect.disabled = webhooks.length === 0;
       resultEl.classList.add('hidden');
