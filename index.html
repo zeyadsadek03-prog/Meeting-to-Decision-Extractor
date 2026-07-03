@@ -46,7 +46,6 @@
           <span id="status" class="text-xs text-slate-500"></span>
         </div>
         <div id="output" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"></div>
-        <div id="returnHook" class="hidden text-xs text-slate-400"></div>
       </div>
     </section>
 
@@ -61,7 +60,6 @@
     const submitBtn = document.getElementById('submit');
     const resultEl = document.getElementById('result');
     const outputEl = document.getElementById('output');
-    const returnHookEl = document.getElementById('returnHook');
     const statusEl = document.getElementById('status');
 
     submitBtn.addEventListener('click', async () => {
@@ -73,7 +71,6 @@
       statusEl.textContent = 'Working...';
       resultEl.classList.remove('hidden');
       outputEl.textContent = '';
-      returnHookEl.classList.add('hidden');
       submitBtn.disabled = true;
 
       try {
@@ -88,10 +85,6 @@
 
         outputEl.textContent = data.formatted || JSON.stringify(data, null, 2);
         statusEl.textContent = 'Posted to Slack ✓';
-        if (data.returnLink) {
-          returnHookEl.textContent = 'Return hook: ' + data.returnLink;
-          returnHookEl.classList.remove('hidden');
-        }
       } catch (err) {
         statusEl.textContent = 'Error: ' + err.message;
         outputEl.textContent = err.message;

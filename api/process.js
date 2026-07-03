@@ -1,10 +1,3 @@
-import { kv } from '@vercel/kv';
-import crypto from 'crypto';
-
-function opaqueId() {
-  return crypto.randomBytes(10).toString('hex');
-}
-
 function normalizeTranscript(text) {
   let s = text.replace(/\r\n/g, '\n');
   s = s.replace(/^\d{2}:\d{2}:\d{2}\.\d{3}\s+-->\s+\d{2}:\d{2}:\d{2}\.\d{3}\s*$/gm, '');
@@ -44,6 +37,11 @@ async function extractJson(prompt) {
   } catch {
     return { raw: content };
   }
+}
+
+function buildReturnLink(webhookUrl) {
+  const params = new URLSearchParams({ w: webhookUrl });
+  return `https://meeting-to-decision-extractor.vercel.app?${params.toString()}`;
 }
 
 export default async function handler(req, res) {
@@ -102,11 +100,7 @@ ${normalized.slice(0, 6000)}`;
 
     const formatted = `*Decisions*\n${decisions || '—'}\n\n*Actions*\n${actions || '—'}\n\n*Deadlines*\n${deadlines}\n\n${notes}`.trim();
 
-    const id = opaqueId();
-    await kv.set(`webhook:${id}`, webhookUrl);
-    await kv.expire(`webhook:${id}`, 60 * 60 * 24 * 30);
-
-    const returnLink = `https://meeting-to-decision-extractor.vercel.app?w=${id}`;
+    const returnLink = buildReturnLink(webhookUrl);
 
     await fetch(webhookUrl, {
       method: 'POST',
