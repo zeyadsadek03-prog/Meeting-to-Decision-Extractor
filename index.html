@@ -130,7 +130,10 @@
       <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 space-y-3 transition-colors duration-300">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-200">Extracted decisions</h2>
-          <span id="status" class="text-xs text-slate-500 dark:text-slate-400"></span>
+          <div class="flex items-center gap-2">
+            <span id="status" class="text-xs text-slate-500 dark:text-slate-400"></span>
+            <button id="copyBtn" class="hidden rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Copy</button>
+          </div>
         </div>
         <div id="output" class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap"></div>
       </div>
@@ -163,6 +166,7 @@
     const resultEl = document.getElementById('result');
     const outputEl = document.getElementById('output');
     const statusEl = document.getElementById('status');
+    const copyBtn = document.getElementById('copyBtn');
     const transcriptEl = document.getElementById('transcript');
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = document.getElementById('themeIcon');
@@ -381,6 +385,7 @@
       resultEl.classList.remove('hidden');
       outputEl.textContent = '';
       submitBtn.disabled = true;
+      copyBtn.classList.add('hidden');
 
       try {
         const res = await fetch('/api/process', {
@@ -390,13 +395,26 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
+
         outputEl.textContent = data.formatted || JSON.stringify(data, null, 2);
         statusEl.textContent = 'Posted to Slack ✓';
+        copyBtn.classList.remove('hidden');
       } catch (err) {
         statusEl.textContent = 'Error: ' + err.message;
         outputEl.textContent = err.message;
       } finally {
         submitBtn.disabled = false;
+      }
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(outputEl.textContent || '');
+        const original = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => { copyBtn.textContent = original; }, 2000);
+      } catch {
+        alert('Failed to copy. Select the text manually.');
       }
     });
 
