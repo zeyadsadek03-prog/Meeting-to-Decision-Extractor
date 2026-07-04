@@ -156,6 +156,16 @@
       </div>
 
       <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Upload meeting recording</label>
+        <div class="flex items-center gap-2">
+          <input id="videoInput" type="file" accept="video/*,audio/*"
+            class="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-indigo-600 hover:file:bg-indigo-100 dark:file:bg-indigo-950 dark:file:text-indigo-400" />
+          <button id="transcribeBtn" class="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-400 active:scale-[.98] transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">Transcribe &amp; Extract</button>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-500">Max ~3 minutes on free tier. MP4, MP3, WAV, M4A, WebM.</p>
+      </div>
+
+      <div class="space-y-1">
         <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Meeting transcript</label>
         <textarea id="transcript" rows="8" placeholder="Paste your transcript or meeting notes here..."
           class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors no-scrollbar"></textarea>
@@ -239,6 +249,8 @@ Return ONLY JSON, no markdown fences or extra text:
     const savePromptBtn = document.getElementById('savePromptBtn');
     const promptList = document.getElementById('promptList');
     const promptError = document.getElementById('promptError');
+    const videoInput = document.getElementById('videoInput');
+    const transcribeBtn = document.getElementById('transcribeBtn');
     const root = document.documentElement;
 
     let currentUser = getCurrentUser();
@@ -622,6 +634,57 @@ Return ONLY JSON, no markdown fences or extra text:
         setTimeout(() => { copyBtn.textContent = original; }, 2000);
       } catch {
         alert('Failed to copy. Select the text manually.');
+      }
+    });
+
+    // ----- Transcribe -----
+    transcribeBtn.addEventListener('click', async () => {
+      const file = videoInput.files[0];
+      if (!file) return alert('Choose a video file first.');
+      if (file.size > 4 * 1024 * 1024) {
+        return alert('File too large for free tier. Max 4MB — use shorter clips.');
+      }
+
+      statusEl.textContent = 'Transcribing...';
+      resultEl.classList.remove('hidden');
+      outputEl.textContent = '';
+      submitBtn.disabled = true;
+      transcribeBtn.disabled = true;
+      copyBtn.classList.add('hidden');
+
+      try {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const selectedPromptId = promptSelect.value;
+        const prompts = getPrompts(currentUser);
+        const selectedPrompt = prompts.find(p => p.id === selectedPromptId);
+
+        const res = await fetch('/api/transcribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            video: base64,
+            prompt: selectedPrompt ? selectedPrompt.body : null
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Transcription failed');
+
+        transcriptEl.value = data.transcript || '';
+        outputEl.textContent = data.formatted || 'No decisions extracted.';
+        statusEl.textContent = 'Transcribed & extracted ✓';
+        copyBtn.classList.remove('hidden');
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + err.message;
+        outputEl.textContent = err.message;
+      } finally {
+        submitBtn.disabled = false;
+        transcribeBtn.disabled = false;
       }
     });
 
