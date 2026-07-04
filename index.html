@@ -240,14 +240,74 @@
       const webhooks = user?.webhooks || [];
 
       webhookList.innerHTML = webhooks.map((item, i) => `
-        <div class="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 p-2.5">
-          <div class="min-w-0 flex-1 mr-2">
-            <p class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(item.name || 'Untitled')}</p>
-            <p class="text-[11px] text-slate-500 dark:text-slate-500 truncate">${escapeHtml(item.url)}</p>
+        <div class="flex flex-col gap-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 p-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0 flex-1 mr-2">
+              <p data-name-display="${i}" class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(item.name || 'Untitled')}</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-500 truncate">${escapeHtml(item.url)}</p>
+            </div>
+            <div class="shrink-0 flex items-center gap-1">
+              <button data-rename="${i}" class="rename-webhook rounded-md px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition">Rename</button>
+              <button data-idx="${i}" class="delete-webhook rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition">Delete</button>
+            </div>
           </div>
-          <button data-idx="${i}" class="delete-webhook shrink-0 rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition">Delete</button>
+          <div data-rename-form="${i}" class="hidden gap-2">
+            <input data-rename-input="${i}" type="text" value="${escapeHtml(item.name || '')}" class="w-full rounded-md border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500" />
+            <div class="flex justify-end gap-1">
+              <button data-rename-save="${i}" class="rounded-md px-2 py-1 text-xs bg-indigo-500 text-white hover:bg-indigo-400 transition">Save</button>
+              <button data-rename-cancel="${i}" class="rounded-md px-2 py-1 text-xs border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Cancel</button>
+            </div>
+          </div>
         </div>
       `).join('') || '<p class="text-xs text-slate-500 dark:text-slate-500 italic">No channels added yet.</p>';
+
+      document.querySelectorAll('.rename-webhook').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.rename);
+          const display = document.querySelector(`[data-name-display="${idx}"]`);
+          const form = document.querySelector(`[data-rename-form="${idx}"]`);
+          const input = document.querySelector(`[data-rename-input="${idx}"]`);
+          const parent = btn.closest('.flex');
+          parent.classList.add('hidden');
+          display.classList.add('hidden');
+          form.classList.remove('hidden');
+          input.focus();
+        });
+      });
+
+      document.querySelectorAll('[data-rename-save]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.renameSave);
+          const input = document.querySelector(`[data-rename-input="${idx}"]`);
+          const name = String(input.value || '').trim();
+          if (!name) return alert('Channel name cannot be empty.');
+          const u = getUser(currentUser);
+          if (u?.webhooks && u.webhooks[idx]) {
+            u.webhooks[idx] = { ...u.webhooks[idx], name };
+            saveUser(currentUser, u.webhooks);
+            renderSetup();
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-rename-cancel]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderSetup();
+        });
+      });
+
+      document.querySelectorAll('[data-rename-input]').forEach(input => {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            const idx = Number(input.dataset.renameInput);
+            const saveBtn = document.querySelector(`[data-rename-save="${idx}"]`);
+            saveBtn.click();
+          }
+          if (e.key === 'Escape') {
+            renderSetup();
+          }
+        });
+      });
 
       document.querySelectorAll('.delete-webhook').forEach(btn => {
         btn.addEventListener('click', () => {
