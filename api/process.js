@@ -50,7 +50,7 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { transcript, webhookUrl } = req.body || {};
+    const { transcript, webhookUrl, prompt } = req.body || {};
 
     if (!transcript || typeof transcript !== 'string') {
       return res.status(400).json({ error: 'Missing transcript' });
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
 
     const normalized = normalizeTranscript(transcript);
 
-    const prompt = `Extract meeting outcomes from this transcript.
+    const promptBody = typeof prompt === 'string' && prompt.trim() ? prompt.trim() : `Extract meeting outcomes from this transcript.
 Focus on: decisions, action items, owners, deadlines.
 If a category is empty, return an empty array.
 
@@ -71,19 +71,14 @@ Return ONLY JSON, no markdown fences or extra text:
   "actions": [{"task": "...", "owner": "...", "deadline": "optional"}],
   "deadlines": ["..."],
   "notes": "optional brief summary"
-}
+}`;
 
-Examples:
-Input: "Ali will send the report by Friday. We agreed to launch on June 20."
-Output: {"decisions":[{"text":"Launch on June 20"}],"actions":[{"task":"Send report","owner":"Ali","deadline":"Friday"}],"deadlines":["Friday","June 20"],"notes":""}
-
-Input: "Let's table this until next week."
-Output: {"decisions":[{"text":"Table topic until next week"}],"actions":[],"deadlines":["next week"],"notes":""}
+    const fullPrompt = `${promptBody}
 
 Transcript:
 ${normalized.slice(0, 6000)}`;
 
-    let parsed = await extractJson(prompt);
+    let parsed = await extractJson(fullPrompt);
 
     if (!parsed || typeof parsed !== 'object' || !('decisions' in parsed) || !('actions' in parsed)) {
       parsed = await extractJson('From the transcript, extract ONLY decisions, action items, owners, and deadlines as JSON. Keys required: decisions, actions, deadlines, notes. No markdown, no explanations, no keys beyond these.');

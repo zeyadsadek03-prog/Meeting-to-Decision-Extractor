@@ -85,6 +85,41 @@
     </div>
   </section>
 
+  <!-- PROMPTS VIEW -->
+  <section id="view-prompts" class="hidden w-full max-w-2xl space-y-6">
+    <div class="flex items-center justify-between">
+      <div class="space-y-1">
+        <h1 class="text-2xl font-bold tracking-tight">Prompts</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Create and manage extraction prompts.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="backFromPromptsBtn" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">Back</button>
+        <button id="logoutPromptsBtn" class="text-xs text-slate-500 dark:text-slate-400 hover:text-red-500 transition">Logout</button>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 space-y-4">
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Prompt name</label>
+        <input id="promptNameInput" type="text" placeholder="e.g. Sprint review, Client call, Standup"
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">System prompt / instructions</label>
+        <textarea id="promptBodyInput" rows="6" placeholder="Describe what to extract and how to format it..."
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors no-scrollbar"></textarea>
+      </div>
+      <div class="flex items-center justify-between">
+        <p id="promptError" class="text-xs text-red-500 hidden"></p>
+        <div class="flex items-center gap-2">
+          <button id="savePromptBtn" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 active:scale-[.98] transition">Save prompt</button>
+        </div>
+      </div>
+
+      <div id="promptList" class="space-y-2"></div>
+    </div>
+  </section>
+
   <!-- MAIN VIEW -->
   <section id="view-main" class="hidden w-full max-w-2xl space-y-6">
     <header class="space-y-2">
@@ -97,7 +132,8 @@
           </button>
           <button id="manageWebhooksBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">
             Channels
-          </button>
+          <button id="managePromptsBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">Prompts</button>
+          <button id="manageWebhooksBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">Channels</button>
           <button id="logoutMainBtn" class="text-xs text-slate-500 dark:text-slate-400 hover:text-red-500 transition">Logout</button>
         </div>
       </div>
@@ -108,6 +144,13 @@
       <div class="space-y-1">
         <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Channel</label>
         <select id="webhookSelect"
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+        </select>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Prompt</label>
+        <select id="promptSelect"
           class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
         </select>
       </div>
@@ -145,12 +188,25 @@
   </section>
 
   <script type="module">
-    import { getCurrentUser, setCurrentUser, clearCurrentUser, getUser, saveUser } from '/lib/storage.js';
+    import { getCurrentUser, setCurrentUser, clearCurrentUser, getUser, saveUser, getPrompts, savePrompts, addPrompt, updatePrompt, deletePrompt } from '/lib/storage.js';
+
+    const DEFAULT_PROMPT = `Extract meeting outcomes from this transcript.
+Focus on: decisions, action items, owners, deadlines.
+If a category is empty, return an empty array.
+
+Return ONLY JSON, no markdown fences or extra text:
+{
+  "decisions": [{"text": "...", "owner": "optional"}],
+  "actions": [{"task": "...", "owner": "...", "deadline": "optional"}],
+  "deadlines": ["..."],
+  "notes": "optional brief summary"
+}`;
 
     const views = {
       login: document.getElementById('view-login'),
       setup: document.getElementById('view-setup'),
-      main: document.getElementById('view-main')
+      main: document.getElementById('view-main'),
+      prompts: document.getElementById('view-prompts')
     };
 
     const loginEmail = document.getElementById('loginEmail');
@@ -162,6 +218,7 @@
     const continueBtn = document.getElementById('continueBtn');
     const setupError = document.getElementById('setupError');
     const webhookSelect = document.getElementById('webhookSelect');
+    const promptSelect = document.getElementById('promptSelect');
     const submitBtn = document.getElementById('submit');
     const resultEl = document.getElementById('result');
     const outputEl = document.getElementById('output');
@@ -171,9 +228,17 @@
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = document.getElementById('themeIcon');
     const themeLabel = document.getElementById('themeLabel');
+    const managePromptsBtn = document.getElementById('managePromptsBtn');
     const manageWebhooksBtn = document.getElementById('manageWebhooksBtn');
+    const backFromPromptsBtn = document.getElementById('backFromPromptsBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const logoutMainBtn = document.getElementById('logoutMainBtn');
+    const logoutPromptsBtn = document.getElementById('logoutPromptsBtn');
+    const promptNameInput = document.getElementById('promptNameInput');
+    const promptBodyInput = document.getElementById('promptBodyInput');
+    const savePromptBtn = document.getElementById('savePromptBtn');
+    const promptList = document.getElementById('promptList');
+    const promptError = document.getElementById('promptError');
     const root = document.documentElement;
 
     let currentUser = getCurrentUser();
@@ -363,14 +428,150 @@
       showView('setup');
     });
 
+    // ----- Prompts -----
+    function renderPrompts() {
+      const prompts = getPrompts(currentUser);
+      promptList.innerHTML = prompts.map((item, i) => `
+        <div class="flex flex-col gap-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 p-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0 flex-1 mr-2">
+              <p data-prompt-name="${i}" class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(item.name)}</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-500 truncate">${escapeHtml((item.body || '').slice(0, 80))}${(item.body || '').length > 80 ? '…' : ''}</p>
+            </div>
+            <div class="shrink-0 flex items-center gap-1">
+              <button data-prompt-use="${i}" class="rounded-md px-2 py-1 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition">Use</button>
+              <button data-prompt-rename="${i}" class="rename-prompt rounded-md px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition">Rename</button>
+              <button data-prompt-delete="${i}" class="delete-prompt rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition">Delete</button>
+            </div>
+          </div>
+          <div data-prompt-rename-form="${i}" class="hidden gap-2">
+            <input data-prompt-rename-input="${i}" type="text" value="${escapeHtml(item.name || '')}" class="w-full rounded-md border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500" />
+            <div class="flex justify-end gap-1">
+              <button data-prompt-rename-save="${i}" class="rounded-md px-2 py-1 text-xs bg-indigo-500 text-white hover:bg-indigo-400 transition">Save</button>
+              <button data-prompt-rename-cancel="${i}" class="rounded-md px-2 py-1 text-xs border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Cancel</button>
+            </div>
+          </div>
+        </div>
+      `).join('') || '<p class="text-xs text-slate-500 dark:text-slate-500 italic">No saved prompts yet.</p>';
+
+      document.querySelectorAll('[data-prompt-use]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.promptUse);
+          const prompts = getPrompts(currentUser);
+          const selected = prompts[idx];
+          if (selected) {
+            promptSelect.value = selected.id;
+            renderMain();
+            showView('main');
+          }
+        });
+      });
+
+      document.querySelectorAll('.rename-prompt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.promptRename);
+          const nameEl = document.querySelector(`[data-prompt-name="${idx}"]`);
+          const form = document.querySelector(`[data-prompt-rename-form="${idx}"]`);
+          const input = document.querySelector(`[data-prompt-rename-input="${idx}"]`);
+          const parent = btn.closest('.flex');
+          parent.classList.add('hidden');
+          nameEl.classList.add('hidden');
+          form.classList.remove('hidden');
+          input.focus();
+        });
+      });
+
+      document.querySelectorAll('[data-prompt-rename-save]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.promptRenameSave);
+          const input = document.querySelector(`[data-prompt-rename-input="${idx}"]`);
+          const name = String(input.value || '').trim();
+          if (!name) return alert('Prompt name cannot be empty.');
+          const prompts = getPrompts(currentUser);
+          const target = prompts[idx];
+          if (target) {
+            updatePrompt(currentUser, target.id, name, target.body);
+            renderPrompts();
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-prompt-rename-cancel]').forEach(btn => {
+        btn.addEventListener('click', () => renderPrompts());
+      });
+
+      document.querySelectorAll('[data-prompt-rename-input]').forEach(input => {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            const idx = Number(input.dataset.promptRenameInput);
+            const saveBtn = document.querySelector(`[data-prompt-rename-save="${idx}"]`);
+            saveBtn.click();
+          }
+          if (e.key === 'Escape') renderPrompts();
+        });
+      });
+
+      document.querySelectorAll('[data-prompt-delete]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.promptDelete);
+          const prompts = getPrompts(currentUser);
+          const target = prompts[idx];
+          if (target && confirm('Delete this prompt?')) {
+            deletePrompt(currentUser, target.id);
+            renderPrompts();
+          }
+        });
+      });
+    }
+
+    savePromptBtn.addEventListener('click', () => {
+      const name = String(promptNameInput.value || '').trim();
+      const body = String(promptBodyInput.value || '').trim();
+      if (!name || !body) {
+        promptError.textContent = 'Name and prompt body are required.';
+        promptError.classList.remove('hidden');
+        return;
+      }
+      addPrompt(currentUser, name, body);
+      promptNameInput.value = '';
+      promptBodyInput.value = '';
+      promptError.classList.add('hidden');
+      renderPrompts();
+    });
+
+    managePromptsBtn.addEventListener('click', () => {
+      renderPrompts();
+      showView('prompts');
+    });
+
+    backFromPromptsBtn.addEventListener('click', () => {
+      renderMain();
+      showView('main');
+    });
+
+    logoutBtn.addEventListener('click', logout);
+    logoutMainBtn.addEventListener('click', logout);
+    logoutPromptsBtn.addEventListener('click', logout);
+
     // ----- Main -----
     function renderMain() {
       const u = getUser(currentUser);
       const webhooks = u?.webhooks || [];
+      const prompts = getPrompts(currentUser);
+
       webhookSelect.innerHTML = webhooks.map((item) =>
         `<option value="${escapeHtml(item.url)}">${escapeHtml(item.name || 'Untitled')}</option>`
       ).join('');
       webhookSelect.disabled = webhooks.length === 0;
+
+      promptSelect.innerHTML = [
+        { id: '__default__', name: 'Default' },
+        ...prompts
+      ].map((item) =>
+        `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`
+      ).join('');
+      promptSelect.value = promptSelect.value || '__default__';
+
       resultEl.classList.add('hidden');
       transcriptEl.value = '';
     }
@@ -378,8 +579,14 @@
     submitBtn.addEventListener('click', async () => {
       const text = transcriptEl.value.trim();
       const webhook = webhookSelect.value;
+      const selectedPromptId = promptSelect.value;
       if (!text) return alert('Paste a transcript first.');
       if (!webhook) return alert('No webhook selected.');
+
+      const u = getUser(currentUser);
+      const prompts = getPrompts(currentUser);
+      const selectedPrompt = prompts.find(p => p.id === selectedPromptId);
+      const promptBody = selectedPrompt ? selectedPrompt.body : DEFAULT_PROMPT;
 
       statusEl.textContent = 'Working...';
       resultEl.classList.remove('hidden');
@@ -391,7 +598,7 @@
         const res = await fetch('/api/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript: text, webhookUrl: webhook })
+          body: JSON.stringify({ transcript: text, webhookUrl: webhook, prompt: promptBody })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
