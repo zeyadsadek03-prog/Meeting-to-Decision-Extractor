@@ -67,7 +67,7 @@
           <label class="text-xs font-medium text-slate-700 dark:text-slate-300">Channel name</label>
           <input id="webhookNameInput" type="text" placeholder="e.g. Engineering, General, Client X"
             class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
-          <p class="text-xs text-slate-500 dark:text-slate-500">Pick a name — this is what you’ll see in the dropdown.</p>
+          <p class="text-xs text-slate-500 dark:text-slate-500">Pick a name — this is what you'll see in the dropdown.</p>
         </div>
       </div>
       <button id="addWebhookBtn" class="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
@@ -81,6 +81,36 @@
         <button id="continueBtn" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 active:scale-[.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
           Continue to Extractor
         </button>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 space-y-4">
+      <div class="space-y-1">
+        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-200">Default channel</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-500">Pick one channel to auto-select on the main page.</p>
+        <select id="defaultChannelSelect" class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors">
+          <option value="">None</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 space-y-4">
+      <div class="space-y-1">
+        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-200">Email output</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-500">Receive extracted decisions by email. Uses your local mail client.</p>
+        <input id="emailInput" type="email" placeholder="you@example.com"
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 space-y-4">
+      <div class="space-y-1">
+        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-200">Telegram bot</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-500">Optional. Provide a bot token + chat ID to also post to Telegram.</p>
+        <input id="tgToken" type="text" placeholder="Bot token"
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
+        <input id="tgChatId" type="text" placeholder="Chat ID"
+          class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
       </div>
     </div>
   </section>
@@ -120,6 +150,22 @@
     </div>
   </section>
 
+  <!-- HISTORY VIEW -->
+  <section id="view-history" class="hidden w-full max-w-2xl space-y-6">
+    <div class="flex items-center justify-between">
+      <div class="space-y-1">
+        <h1 class="text-2xl font-bold tracking-tight">History</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Past extractions in this browser.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="backFromHistoryBtn" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">Back</button>
+        <button id="clearHistoryBtn" class="text-xs text-red-500 hover:text-red-600 transition">Clear</button>
+      </div>
+    </div>
+
+    <div id="historyList" class="space-y-2"></div>
+  </section>
+
   <!-- MAIN VIEW -->
   <section id="view-main" class="hidden w-full max-w-2xl space-y-6">
     <header class="space-y-2">
@@ -130,9 +176,8 @@
             <span id="themeIcon" class="text-base leading-none">🌙</span>
             <span id="themeLabel">Dark</span>
           </button>
-          <button id="manageWebhooksBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-            Channels
           <button id="managePromptsBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">Prompts</button>
+          <button id="historyBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">History</button>
           <button id="manageWebhooksBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition">Channels</button>
           <button id="logoutMainBtn" class="text-xs text-slate-500 dark:text-slate-400 hover:text-red-500 transition">Logout</button>
         </div>
@@ -146,6 +191,10 @@
         <select id="webhookSelect"
           class="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
         </select>
+        <div class="flex items-center gap-1.5">
+          <input id="postAllToggle" type="checkbox" class="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+          <label for="postAllToggle" class="text-[11px] text-slate-500 dark:text-slate-500">Post to all channels</label>
+        </div>
       </div>
 
       <div class="space-y-1">
@@ -163,9 +212,14 @@
 
       <div class="flex items-center justify-between">
         <p class="text-xs text-slate-500 dark:text-slate-500">No account needed. We never store your transcript.</p>
-        <button id="submit" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 active:scale-[.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
-          Extract &amp; Post to Slack
-        </button>
+        <div class="flex items-center gap-2">
+          <button id="submit" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 active:scale-[.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
+            Extract
+          </button>
+          <button id="postBtn" class="hidden rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400 active:scale-[.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
+            Post to Slack
+          </button>
+        </div>
       </div>
     </section>
 
@@ -175,10 +229,15 @@
           <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-200">Extracted decisions</h2>
           <div class="flex items-center gap-2">
             <span id="status" class="text-xs text-slate-500 dark:text-slate-400"></span>
+            <button id="editToggle" class="hidden rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Edit</button>
             <button id="copyBtn" class="hidden rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Copy</button>
+            <button id="exportMdBtn" class="hidden rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">MD</button>
+            <button id="exportCsvBtn" class="hidden rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">CSV</button>
+            <button id="emailBtn" class="hidden rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Email</button>
           </div>
         </div>
         <div id="output" class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap"></div>
+        <textarea id="editArea" rows="8" class="hidden w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors no-scrollbar"></textarea>
       </div>
     </section>
 
@@ -188,7 +247,7 @@
   </section>
 
   <script type="module">
-    import { getCurrentUser, setCurrentUser, clearCurrentUser, getUser, saveUser, getPrompts, savePrompts, addPrompt, updatePrompt, deletePrompt } from '/lib/storage.js';
+    import { getCurrentUser, setCurrentUser, clearCurrentUser, getUser, saveUser, getPrompts, savePrompts, addPrompt, updatePrompt, deletePrompt, getHistory, addHistory, clearHistory, getDefaultWebhook, setDefaultWebhook, getEmail, setEmail, getTelegramConfig, setTelegramConfig } from '/lib/storage.js';
 
     const DEFAULT_PROMPT = `Extract meeting outcomes from this transcript.
 Focus on: decisions, action items, owners, deadlines.
@@ -206,7 +265,8 @@ Return ONLY JSON, no markdown fences or extra text:
       login: document.getElementById('view-login'),
       setup: document.getElementById('view-setup'),
       main: document.getElementById('view-main'),
-      prompts: document.getElementById('view-prompts')
+      prompts: document.getElementById('view-prompts'),
+      history: document.getElementById('view-history')
     };
 
     const loginEmail = document.getElementById('loginEmail');
@@ -217,13 +277,24 @@ Return ONLY JSON, no markdown fences or extra text:
     const webhookList = document.getElementById('webhookList');
     const continueBtn = document.getElementById('continueBtn');
     const setupError = document.getElementById('setupError');
+    const defaultChannelSelect = document.getElementById('defaultChannelSelect');
+    const emailInput = document.getElementById('emailInput');
+    const tgToken = document.getElementById('tgToken');
+    const tgChatId = document.getElementById('tgChatId');
     const webhookSelect = document.getElementById('webhookSelect');
     const promptSelect = document.getElementById('promptSelect');
+    const postAllToggle = document.getElementById('postAllToggle');
     const submitBtn = document.getElementById('submit');
+    const postBtn = document.getElementById('postBtn');
     const resultEl = document.getElementById('result');
     const outputEl = document.getElementById('output');
     const statusEl = document.getElementById('status');
     const copyBtn = document.getElementById('copyBtn');
+    const editToggle = document.getElementById('editToggle');
+    const exportMdBtn = document.getElementById('exportMdBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const emailBtn = document.getElementById('emailBtn');
+    const editArea = document.getElementById('editArea');
     const transcriptEl = document.getElementById('transcript');
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = document.getElementById('themeIcon');
@@ -231,6 +302,10 @@ Return ONLY JSON, no markdown fences or extra text:
     const managePromptsBtn = document.getElementById('managePromptsBtn');
     const manageWebhooksBtn = document.getElementById('manageWebhooksBtn');
     const backFromPromptsBtn = document.getElementById('backFromPromptsBtn');
+    const historyBtn = document.getElementById('historyBtn');
+    const backFromHistoryBtn = document.getElementById('backFromHistoryBtn');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const historyList = document.getElementById('historyList');
     const logoutBtn = document.getElementById('logoutBtn');
     const logoutMainBtn = document.getElementById('logoutMainBtn');
     const logoutPromptsBtn = document.getElementById('logoutPromptsBtn');
@@ -242,19 +317,20 @@ Return ONLY JSON, no markdown fences or extra text:
     const root = document.documentElement;
 
     let currentUser = getCurrentUser();
+    let lastWebhookUrls = [];
+    let lastTelegram = null;
+
+    function showView(name) {
+      Object.values(views).forEach(el => el.classList.add('hidden'));
+      views[name].classList.remove('hidden');
+    }
 
     function safeRoute() {
       try {
         route();
       } catch {
-        currentUser = '';
         showView('login');
       }
-    }
-
-    function showView(name) {
-      Object.values(views).forEach(el => el.classList.add('hidden'));
-      views[name].classList.remove('hidden');
     }
 
     // ----- Theme -----
@@ -289,6 +365,7 @@ Return ONLY JSON, no markdown fences or extra text:
 
     logoutBtn.addEventListener('click', logout);
     logoutMainBtn.addEventListener('click', logout);
+    logoutPromptsBtn.addEventListener('click', logout);
 
     loginBtn.addEventListener('click', () => {
       const email = String(loginEmail.value || '').trim();
@@ -307,6 +384,21 @@ Return ONLY JSON, no markdown fences or extra text:
     function renderSetup() {
       const user = getUser(currentUser);
       const webhooks = user?.webhooks || [];
+      const defaultUrl = getDefaultWebhook(currentUser);
+      const emailAddr = getEmail(currentUser);
+      const tg = getTelegramConfig(currentUser);
+
+      if (emailAddr) emailInput.value = emailAddr;
+      else emailInput.value = '';
+      if (tg?.token) tgToken.value = tg.token;
+      else tgToken.value = '';
+      if (tg?.chatId) tgChatId.value = tg.chatId;
+      else tgChatId.value = '';
+
+      defaultChannelSelect.innerHTML = webhooks.map(item =>
+        `<option value="${escapeHtml(item.url)}" ${defaultUrl === item.url ? 'selected' : ''}>${escapeHtml(item.name || 'Untitled')}</option>`
+      ).join('');
+      defaultChannelSelect.innerHTML = `<option value="">None</option>` + defaultChannelSelect.innerHTML;
 
       webhookList.innerHTML = webhooks.map((item, i) => `
         <div class="flex flex-col gap-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 p-2.5">
@@ -316,6 +408,7 @@ Return ONLY JSON, no markdown fences or extra text:
               <p class="text-[11px] text-slate-500 dark:text-slate-500 truncate">${escapeHtml(item.url)}</p>
             </div>
             <div class="shrink-0 flex items-center gap-1">
+              <button data-default="${i}" class="rounded-md px-2 py-1 text-xs text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 transition">Default</button>
               <button data-rename="${i}" class="rename-webhook rounded-md px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition">Rename</button>
               <button data-idx="${i}" class="delete-webhook rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition">Delete</button>
             </div>
@@ -360,9 +453,7 @@ Return ONLY JSON, no markdown fences or extra text:
       });
 
       document.querySelectorAll('[data-rename-cancel]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          renderSetup();
-        });
+        btn.addEventListener('click', () => renderSetup());
       });
 
       document.querySelectorAll('[data-rename-input]').forEach(input => {
@@ -372,9 +463,7 @@ Return ONLY JSON, no markdown fences or extra text:
             const saveBtn = document.querySelector(`[data-rename-save="${idx}"]`);
             saveBtn.click();
           }
-          if (e.key === 'Escape') {
-            renderSetup();
-          }
+          if (e.key === 'Escape') renderSetup();
         });
       });
 
@@ -385,6 +474,17 @@ Return ONLY JSON, no markdown fences or extra text:
           if (u?.webhooks) {
             u.webhooks.splice(idx, 1);
             saveUser(currentUser, u.webhooks);
+            renderSetup();
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-default]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.default);
+          const u = getUser(currentUser);
+          if (u?.webhooks && u.webhooks[idx]) {
+            setDefaultWebhook(currentUser, u.webhooks[idx].url);
             renderSetup();
           }
         });
@@ -416,6 +516,24 @@ Return ONLY JSON, no markdown fences or extra text:
       webhookNameInput.value = '';
       setupError.classList.add('hidden');
       renderSetup();
+    });
+
+    defaultChannelSelect.addEventListener('change', () => {
+      setDefaultWebhook(currentUser, defaultChannelSelect.value || '');
+    });
+
+    emailInput.addEventListener('change', () => {
+      setEmail(currentUser, String(emailInput.value || '').trim());
+    });
+
+    tgToken.addEventListener('change', () => {
+      const cfg = getTelegramConfig(currentUser);
+      setTelegramConfig(currentUser, { token: String(tgToken.value || '').trim(), chatId: cfg?.chatId || '' });
+    });
+
+    tgChatId.addEventListener('change', () => {
+      const cfg = getTelegramConfig(currentUser);
+      setTelegramConfig(currentUser, { token: cfg?.token || '', chatId: String(tgChatId.value || '').trim() });
     });
 
     continueBtn.addEventListener('click', () => {
@@ -549,18 +667,69 @@ Return ONLY JSON, no markdown fences or extra text:
       showView('main');
     });
 
-    logoutBtn.addEventListener('click', logout);
-    logoutMainBtn.addEventListener('click', logout);
-    logoutPromptsBtn.addEventListener('click', logout);
+    // ----- History -----
+    function renderHistory() {
+      const items = getHistory(currentUser);
+      historyList.innerHTML = items.map((item, i) => `
+        <div class="flex flex-col gap-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 p-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0 flex-1 mr-2 cursor-pointer" data-history-open="${i}">
+              <p class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(item.channel || 'Unknown channel')}</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-500">${escapeHtml(new Date(item.date || Date.now()).toLocaleString())} • ${escapeHtml(item.prompt || 'Default')}</p>
+            </div>
+            <button data-history-delete="${i}" class="delete-history rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition">Delete</button>
+          </div>
+          <div data-history-body="${i}" class="hidden text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5">${escapeHtml(item.formatted || '')}</div>
+        </div>
+      `).join('') || '<p class="text-xs text-slate-500 dark:text-slate-500 italic">No history yet.</p>';
+
+      document.querySelectorAll('[data-history-open]').forEach(el => {
+        el.addEventListener('click', () => {
+          const idx = Number(el.dataset.historyOpen);
+          const body = document.querySelector(`[data-history-body="${idx}"]`);
+          body.classList.toggle('hidden');
+        });
+      });
+
+      document.querySelectorAll('.delete-history').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.historyDelete);
+          if (confirm('Delete this history item?')) {
+            const all = getHistory(currentUser);
+            all.splice(idx, 1);
+            saveHistory(currentUser, all);
+            renderHistory();
+          }
+        });
+      });
+    }
+
+    historyBtn.addEventListener('click', () => {
+      renderHistory();
+      showView('history');
+    });
+
+    backFromHistoryBtn.addEventListener('click', () => {
+      renderMain();
+      showView('main');
+    });
+
+    clearHistoryBtn.addEventListener('click', () => {
+      if (confirm('Clear all history?')) {
+        clearHistory(currentUser);
+        renderHistory();
+      }
+    });
 
     // ----- Main -----
     function renderMain() {
       const u = getUser(currentUser);
       const webhooks = u?.webhooks || [];
       const prompts = getPrompts(currentUser);
+      const defaultUrl = getDefaultWebhook(currentUser);
 
       webhookSelect.innerHTML = webhooks.map((item) =>
-        `<option value="${escapeHtml(item.url)}">${escapeHtml(item.name || 'Untitled')}</option>`
+        `<option value="${escapeHtml(item.url)}" ${defaultUrl === item.url ? 'selected' : ''}>${escapeHtml(item.name || 'Untitled')}</option>`
       ).join('');
       webhookSelect.disabled = webhooks.length === 0;
 
@@ -574,38 +743,89 @@ Return ONLY JSON, no markdown fences or extra text:
 
       resultEl.classList.add('hidden');
       transcriptEl.value = '';
+      outputEl.classList.remove('hidden');
+      editArea.classList.add('hidden');
+      editToggle.textContent = 'Edit';
+      postAllToggle.checked = false;
+      submitBtn.classList.remove('hidden');
+      submitBtn.disabled = false;
+      postBtn.classList.add('hidden');
+      copyBtn.classList.add('hidden');
+      editToggle.classList.add('hidden');
+      exportMdBtn.classList.add('hidden');
+      exportCsvBtn.classList.add('hidden');
+      emailBtn.classList.add('hidden');
     }
 
     submitBtn.addEventListener('click', async () => {
       const text = transcriptEl.value.trim();
       const webhook = webhookSelect.value;
       const selectedPromptId = promptSelect.value;
+      const postAll = postAllToggle.checked;
+
       if (!text) return alert('Paste a transcript first.');
-      if (!webhook) return alert('No webhook selected.');
+      if (!webhook && !postAll) return alert('No webhook selected.');
 
       const u = getUser(currentUser);
+      const webhooks = u?.webhooks || [];
+      const targetWebhooks = postAll ? webhooks : (webhooks.find(w => w.url === webhook) ? [{ url: webhook }] : []);
+
+      if (!postAll && targetWebhooks.length === 0) return alert('No webhook selected.');
+
+      lastWebhookUrls = targetWebhooks.map(w => w.url);
+      lastTelegram = getTelegramConfig(currentUser);
+
       const prompts = getPrompts(currentUser);
       const selectedPrompt = prompts.find(p => p.id === selectedPromptId);
       const promptBody = selectedPrompt ? selectedPrompt.body : DEFAULT_PROMPT;
 
       statusEl.textContent = 'Working...';
       resultEl.classList.remove('hidden');
+      outputEl.classList.remove('hidden');
+      editArea.classList.add('hidden');
       outputEl.textContent = '';
       submitBtn.disabled = true;
+      postBtn.classList.add('hidden');
       copyBtn.classList.add('hidden');
+      editToggle.classList.add('hidden');
+      exportMdBtn.classList.add('hidden');
+      exportCsvBtn.classList.add('hidden');
+      emailBtn.classList.add('hidden');
 
       try {
         const res = await fetch('/api/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript: text, webhookUrl: webhook, prompt: promptBody })
+          body: JSON.stringify({
+            transcript: text,
+            webhookUrl: targetWebhooks.map(w => w.url),
+            prompt: promptBody
+          })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
 
         outputEl.textContent = data.formatted || JSON.stringify(data, null, 2);
-        statusEl.textContent = 'Posted to Slack ✓';
+        statusEl.textContent = 'Ready to post';
+        submitBtn.classList.add('hidden');
+        postBtn.classList.remove('hidden');
         copyBtn.classList.remove('hidden');
+        editToggle.classList.remove('hidden');
+        exportMdBtn.classList.remove('hidden');
+        exportCsvBtn.classList.remove('hidden');
+        editToggle.textContent = 'Edit';
+        editArea.classList.add('hidden');
+        outputEl.classList.remove('hidden');
+
+        const emailAddr = getEmail(currentUser);
+        if (emailAddr) emailBtn.classList.remove('hidden');
+
+        addHistory(currentUser, {
+          date: Date.now(),
+          channel: postAll ? 'All channels' : (webhooks.find(w => w.url === webhook)?.name || 'Unknown'),
+          prompt: selectedPrompt ? selectedPrompt.name : 'Default',
+          formatted: outputEl.textContent
+        });
       } catch (err) {
         statusEl.textContent = 'Error: ' + err.message;
         outputEl.textContent = err.message;
@@ -614,15 +834,116 @@ Return ONLY JSON, no markdown fences or extra text:
       }
     });
 
-    copyBtn.addEventListener('click', async () => {
+    postBtn.addEventListener('click', async () => {
+      const text = editing ? editArea.value : outputEl.textContent;
+      if (!text) return alert('Nothing to post.');
+
+      statusEl.textContent = 'Posting...';
+      postBtn.disabled = true;
+      copyBtn.classList.add('hidden');
+      editToggle.classList.add('hidden');
+      exportMdBtn.classList.add('hidden');
+      exportCsvBtn.classList.add('hidden');
+      emailBtn.classList.add('hidden');
+
       try {
-        await navigator.clipboard.writeText(outputEl.textContent || '');
+        const res = await fetch('/api/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: text,
+            webhookUrl: lastWebhookUrls,
+            telegram: lastTelegram
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+
+        statusEl.textContent = 'Posted ✓';
+        postBtn.classList.add('hidden');
+        submitBtn.classList.remove('hidden');
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + err.message;
+      } finally {
+        postBtn.disabled = false;
+      }
+    });
+
+    // ----- Edit -----
+    let editing = false;
+    editToggle.addEventListener('click', () => {
+      editing = !editing;
+      if (editing) {
+        editArea.value = outputEl.textContent || '';
+        outputEl.classList.add('hidden');
+        editArea.classList.remove('hidden');
+        editToggle.textContent = 'Done';
+      } else {
+        outputEl.textContent = editArea.value || '';
+        editArea.classList.add('hidden');
+        outputEl.classList.remove('hidden');
+        editToggle.textContent = 'Edit';
+      }
+    });
+
+    // ----- Copy -----
+    copyBtn.addEventListener('click', async () => {
+      const text = editing ? editArea.value : outputEl.textContent;
+      try {
+        await navigator.clipboard.writeText(text || '');
         const original = copyBtn.textContent;
         copyBtn.textContent = 'Copied!';
         setTimeout(() => { copyBtn.textContent = original; }, 2000);
       } catch {
         alert('Failed to copy. Select the text manually.');
       }
+    });
+
+    // ----- Export Markdown -----
+    exportMdBtn.addEventListener('click', () => {
+      const text = editing ? editArea.value : outputEl.textContent;
+      const blob = new Blob(['# Meeting Results\n\n' + (text || '')], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'meeting-results.md';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ----- Export CSV -----
+    exportCsvBtn.addEventListener('click', () => {
+      const text = editing ? editArea.value : outputEl.textContent;
+      const lines = (text || '').split('\n').filter(l => l.trim());
+      const rows = [['Category', 'Detail']];
+      let section = '';
+      for (const line of lines) {
+        if (line.startsWith('*Decisions*')) section = 'Decision';
+        else if (line.startsWith('*Actions*')) section = 'Action';
+        else if (line.startsWith('*Deadlines*')) section = 'Deadline';
+        else if (line.startsWith('Notes:')) section = 'Note';
+        else if (line.startsWith('•')) {
+          rows.push([section, line.replace('•', '').trim()]);
+        }
+      }
+      const csv = rows.map(r => r.map(c => '"' + c.replace(/"/g, '""') + '"').join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'meeting-results.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ----- Email -----
+    emailBtn.addEventListener('click', () => {
+      const text = editing ? editArea.value : outputEl.textContent;
+      const emailAddr = getEmail(currentUser);
+      if (!emailAddr) return;
+      const subject = encodeURIComponent('Meeting Results');
+      const body = encodeURIComponent(text || '');
+      window.location.href = `mailto:${emailAddr}?subject=${subject}&body=${body}`;
     });
 
     // ----- Router -----
@@ -632,28 +953,17 @@ Return ONLY JSON, no markdown fences or extra text:
         showView('login');
       } else {
         const u = getUser(currentUser);
-        if (u?.webhooks?.length) {
-          renderMain();
-          showView('main');
-        } else {
-          setupError.classList.add('hidden');
+        if (!u?.webhooks || u.webhooks.length === 0) {
           renderSetup();
           showView('setup');
+        } else {
+          renderMain();
+          showView('main');
         }
       }
     }
 
-    window.addEventListener('hashchange', safeRoute);
     safeRoute();
-
-    // ----- Utils -----
-    function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
   </script>
 </body>
 </html>

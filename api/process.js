@@ -50,12 +50,13 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { transcript, webhookUrl, prompt } = req.body || {};
+    const { transcript, webhookUrl, prompt, telegram } = req.body || {};
+    const webhookUrls = Array.isArray(webhookUrl) ? webhookUrl.filter(Boolean) : (typeof webhookUrl === 'string' ? [webhookUrl] : []);
 
     if (!transcript || typeof transcript !== 'string') {
       return res.status(400).json({ error: 'Missing transcript' });
     }
-    if (!webhookUrl || typeof webhookUrl !== 'string') {
+    if (webhookUrls.length === 0) {
       return res.status(400).json({ error: 'Missing Slack webhook URL' });
     }
 
@@ -95,21 +96,32 @@ ${normalized.slice(0, 6000)}`;
 
     const formatted = `*Decisions*\n${decisions || '—'}\n\n*Actions*\n${actions || '—'}\n\n*Deadlines*\n${deadlines}\n\n${notes}`.trim();
 
-    const returnLink = buildReturnLink(webhookUrl);
+    const returnLink = webhookUrls.length === 1 ? buildReturnLink(webhookUrls[0]) : 'https://meeting-to-decision-extractor.vercel.app';
 
-    await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: 'Meeting summary',
-        blocks: [
-          { type: 'section', text: { type: 'mrkdwn', text: '*Meeting summary*\n\n' + formatted } },
-          { type: 'context', elements: [{ type: 'mrkdwn', text: `Next meeting: paste transcript here → ${returnLink}` }] }
-        ]
-      })
-    });
+    await Promise.all(webhookUrls.map(url =>
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: 'Meeting summary',
+          blocks: [
+            { type: 'section', text: { type: 'mrkdwn', text: '*Meeting summary*\n\n' + formatted } },
+            { type: 'context', elements: [{ type: 'mrkdwn', text: `Next meeting: paste transcript here → ${returnLink}` }] }
+          ]
+        })
+      }).catch(() => {})
+    ));
 
-    return res.status(200).json({ formatted, returnLink });
+    const tg = typeof telegram === 'object' && telegram?.token && telegram?.chatId ? telegram : null;
+    if (tg) {
+      await fetch(`https://api.telegram.org/bot${tg.token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: tg.chatId, text: 'Meeting summary\n\n' + formatted })
+      }).catch(() => {});
+    }
+
+    return res.status(200).json({ formatted, parsed, returnLink });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
